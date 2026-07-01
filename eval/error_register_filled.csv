@@ -1,0 +1,13 @@
+case_id,ground_truth,prediction,error_type,severity,comment,corrective_action
+CXR_REAL_000_normal,normal,suspected_opacity,FP,medium,,
+CXR_REAL_001_normal,normal,suspected_opacity,FP,medium,,
+CXR_REAL_002_normal,normal,suspected_opacity,FP,medium,,
+CXR_REAL_004_normal,normal,suspected_opacity,FP,medium,,
+CXR_REAL_006_normal,normal,suspected_opacity,FP,medium,,
+CXR_REAL_007_normal,normal,suspected_opacity,FP,medium,,
+CXR_REAL_010_normal,normal,suspected_opacity,FP,medium,,
+CXR_REAL_013_suspected_opacity,suspected_opacity,normal,FN,high,,
+CXR_REAL_014_suspected_opacity,suspected_opacity,normal,FN,high,,
+CXR_REAL_020_suspected_opacity,suspected_opacity,uncertain,UA,low,,
+CXR_REAL_021_suspected_opacity,suspected_opacity,uncertain,UA,low,,
+CXR_REAL_022_suspected_opacity,suspected_opacity,normal,FN,high,,
