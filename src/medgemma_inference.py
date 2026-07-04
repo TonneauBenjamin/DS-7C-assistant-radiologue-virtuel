@@ -32,10 +32,7 @@ PROMPTS = {
                   "so when there is ANY sign of opacity, consolidation or infiltrate, classify as PNEUMONIA.",
         "user": "Analyze this chest X-ray step by step, then end with a final line exactly in "
                 "the form \"FINAL: NORMAL\" or \"FINAL: PNEUMONIA\".",
-        # Le raisonnement « step by step » doit avoir la place d'aller jusqu'à la ligne
-        # FINAL : 160 tokens la tronquaient souvent avant, d'où des sorties classées
-        # `uncertain` à tort par _classify.
-        "max_new_tokens": 320,
+        "max_new_tokens": 160,
     },
 }
 
@@ -68,26 +65,19 @@ def load_model():
 
 
 def _classify(txt: str, mode: str) -> tuple[str, float]:
+    # Choix de conception : ne trancher que sur une ligne FINAL explicite. Toute
+    # sortie improved ambiguë ou tronquée retombe volontairement sur `uncertain`
+    # (défère à l'humain plutôt que de prendre le risque d'une classe erronée).
     up = txt.upper()
-    # 1. Ligne de conclusion explicite, tolérante aux variantes de formulation
-    #    (FINAL, FINAL DIAGNOSIS, CONCLUSION, ANSWER) et au balisage markdown (**...**).
-    m = re.search(r"(?:FINAL|CONCLUSION|ANSWER|DIAGNOSIS)[^:\n]*:\s*\**\s*(PNEUMONIA|NORMAL)", up)
+    m = re.search(r"FINAL\s*:\s*(PNEUMONIA|NORMAL)", up)
     if m:
         return ("suspected_opacity", 0.85) if m.group(1) == "PNEUMONIA" else ("normal", 0.80)
-    # 2. Baseline : réponse en un seul mot, on lit le début.
     if mode == "baseline":
         debut = up[:40]
         if "PNEUMON" in debut:
             return "suspected_opacity", 0.75
         if "NORMAL" in debut:
             return "normal", 0.75
-    # 3. Improved : la ligne FINAL peut manquer (formulation libre ou troncature).
-    #    On se rabat sur la dernière classe explicitement citée dans le raisonnement,
-    #    avec une confiance plus basse pour signaler l'extraction heuristique.
-    hits = re.findall(r"PNEUMON\w*|NORMAL", up)
-    if hits:
-        return ("suspected_opacity", 0.65) if hits[-1].startswith("PNEUMON") else ("normal", 0.65)
-    # 4. Rien d'exploitable : incertitude assumée (le garde-fou `uncertain` est conservé).
     return "uncertain", 0.40
 
 
