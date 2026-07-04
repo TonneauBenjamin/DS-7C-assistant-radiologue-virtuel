@@ -25,3 +25,7 @@ medapp/demo_data/images/*
 
 # Local duplicate; the shareable PDF lives in docs/appel_offre.pdf
 /appel_offre.pdf
+
+# Rendu local non versionné
+docs/rapport_final.md
+docs/demo_script.md

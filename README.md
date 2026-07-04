@@ -83,12 +83,19 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 
 La réponse doit contenir une classe, une confiance, des observations visuelles, une justification, des limites et l'avertissement non clinique.
 
+## Résultats
+
+- **Registre d'erreurs analysé** : [`eval/error_register_filled.csv`](eval/error_register_filled.csv)
+  (FP/FN/UA avec commentaires et actions correctives).
+- **Comparaison baseline vs improved** : [`docs/resultats/before_after_real.csv`](docs/resultats/before_after_real.csv)
+  — sensibilité opacités ×3.5 (0.17 → 0.58) à modèle constant, 100 % JSON valide, 100 % warning.
+
 ## Organisation
 
 ```text
 assistant-radiologue-virtuel/
 ├── README.md
-├── docs/          # appel d'offre, architecture, éthique, évaluation
+├── docs/          # appel d'offre, architecture, éthique, évaluation, rapport final, script de démo
 ├── data/          # cas synthétiques et images jouet
 ├── prompts/       # prompt baseline, prompt amélioré, schéma JSON
 ├── src/           # inférence jouet, garde-fous, métriques, SQLite

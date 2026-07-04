@@ -1,13 +1,13 @@
 case_id,ground_truth,prediction,error_type,severity,comment,corrective_action
-CXR_REAL_000_normal,normal,suspected_opacity,FP,medium,,
-CXR_REAL_001_normal,normal,suspected_opacity,FP,medium,,
-CXR_REAL_002_normal,normal,suspected_opacity,FP,medium,,
-CXR_REAL_004_normal,normal,suspected_opacity,FP,medium,,
-CXR_REAL_006_normal,normal,suspected_opacity,FP,medium,,
-CXR_REAL_007_normal,normal,suspected_opacity,FP,medium,,
-CXR_REAL_010_normal,normal,suspected_opacity,FP,medium,,
-CXR_REAL_013_suspected_opacity,suspected_opacity,normal,FN,high,,
-CXR_REAL_014_suspected_opacity,suspected_opacity,normal,FN,high,,
-CXR_REAL_020_suspected_opacity,suspected_opacity,uncertain,UA,low,,
-CXR_REAL_021_suspected_opacity,suspected_opacity,uncertain,UA,low,,
-CXR_REAL_022_suspected_opacity,suspected_opacity,normal,FN,high,,
+CXR_REAL_000_normal,normal,suspected_opacity,FP,medium,"Prompt improved trop prudent : trame vasculaire accentuée interprétée comme opacité, confiance 0.80 non calibrée","Ajouter un critère explicite densité focale vs trame diffuse dans le prompt ; calibrer la confiance"
+CXR_REAL_001_normal,normal,suspected_opacity,FP,medium,"Surcall récurrent du prompt improved sur cliché normal : le modèle privilégie la sensibilité au détriment de la spécificité","Demander au modèle de citer la localisation précise (lobe, côté) avant de conclure"
+CXR_REAL_002_normal,normal,suspected_opacity,FP,medium,"Zone cardiaque/hilaire dense confondue avec une opacité parenchymateuse","Ajouter une règle prompt : exclure silhouette cardiaque et hiles des critères d'opacité"
+CXR_REAL_004_normal,normal,suspected_opacity,FP,medium,"Même schéma de surcall : confiance 0.80 identique sur tous les FP, signe d'une confiance non calibrée","Post-traitement : plafonner la confiance quand aucune localisation explicite n'est fournie"
+CXR_REAL_006_normal,normal,suspected_opacity,FP,medium,"Exposition/pénétration du cliché non prise en compte avant la décision","Renforcer l'étape image_quality : si exposition douteuse, basculer vers uncertain"
+CXR_REAL_007_normal,normal,suspected_opacity,FP,medium,"Faux positif cohérent avec la spécificité mesurée à 0.42 en mode improved (vs 1.00 en baseline)","Ablation de prompt : retirer une à une les consignes de prudence pour identifier celle qui cause le surcall"
+CXR_REAL_010_normal,normal,suspected_opacity,FP,medium,"Le prompt improved oriente le modèle vers la recherche active d'anomalie (biais de confirmation)","Reformuler : demander d'abord les arguments POUR la normalité, puis les arguments contre"
+CXR_REAL_013_suspected_opacity,suspected_opacity,normal,FN,high,"Opacité réelle manquée : erreur la plus grave cliniquement (fausse réassurance)","Cas à montrer en soutenance ; vérifier l'effet du seuil uncertain (<0.60) sur la sensibilité"
+CXR_REAL_014_suspected_opacity,suspected_opacity,normal,FN,high,"Opacité discrète non détectée ; le modèle 4B quantifié en 8-bit reste limité sur les signes subtils","Tester la version non quantifiée ou un modèle plus grand ; envisager un LoRA ciblé pneumonie (piste bonus)"
+CXR_REAL_020_suspected_opacity,suspected_opacity,uncertain,UA,low,"Incertitude acceptable : le garde-fou a fonctionné comme prévu (signes faibles, confiance <0.60)","Aucune action : comportement souhaité, à présenter comme réussite du garde-fou"
+CXR_REAL_021_suspected_opacity,suspected_opacity,uncertain,UA,low,"Renvoi vers validation humaine plutôt que faux négatif : préférable à un FN pour un prototype non clinique","Aucune action : documenter ce cas comme exemple de prudence utile"
+CXR_REAL_022_suspected_opacity,suspected_opacity,normal,FN,high,"Faux négatif : opacité basale discrète non détectée sur une image difficile","Ajouter au jeu final commenté ; illustrer la limite du modèle et la nécessité de validation humaine"
