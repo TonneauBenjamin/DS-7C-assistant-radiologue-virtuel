@@ -16,7 +16,7 @@ Image upload → Preprocessing → VLM / toy model → Guardrails → JSON → U
 - `src/metrics.py` : accuracy, macro-F1, sensibilité, spécificité, validité JSON.
 - `src/database.py` : initialisation SQLite et stockage des runs.
 - `api/main.py` : endpoint FastAPI `/predict`.
-- `app/streamlit_app.py` et `app/gradio_app.py` : interfaces rapides.
+- `medapp/app.py` : interface clinique TrueVision (Streamlit).
 
 ## Endpoint attendu
 

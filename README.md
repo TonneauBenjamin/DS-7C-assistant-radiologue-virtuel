@@ -32,9 +32,9 @@ Le bon rendu ne cherche pas à impressionner par un modèle spectaculaire. Il d�
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r medapp/requirements.txt
 python eval/run_evaluation.py --mode toy
-streamlit run app/streamlit_app.py
+streamlit run medapp/app.py
 ```
 
 ## Smoke test du dépôt
@@ -44,7 +44,7 @@ Avant une soutenance, un push ou une livraison, lancer le contrôle court :
 ```bash
 pip install -r requirements-test.txt
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q
-python -m compileall -q src api app eval finetuning tests
+python -m compileall -q src api medapp eval finetuning tests
 python eval/run_evaluation.py --mode toy \
   --out-dir /tmp/assistant-radio-eval \
   --db-path /tmp/assistant-radio-evidence.sqlite
@@ -95,12 +95,11 @@ La réponse doit contenir une classe, une confiance, des observations visuelles,
 ```text
 assistant-radiologue-virtuel/
 ├── README.md
-├── docs/          # appel d'offre, architecture, éthique, évaluation, rapport final, script de démo
+├── docs/          # appel d'offre, architecture, éthique, évaluation, résultats
 ├── data/          # cas synthétiques et images jouet
 ├── prompts/       # prompt baseline, prompt amélioré, schéma JSON
 ├── src/           # inférence jouet, garde-fous, métriques, SQLite
 ├── api/           # FastAPI
-├── app/           # Streamlit / Gradio (démo simple)
 ├── medapp/        # interface clinique complète (TrueVision)
 ├── eval/          # évaluation, sorties CSV/JSON, registre d'erreurs
 ├── tests/         # smoke tests et contrat minimal
