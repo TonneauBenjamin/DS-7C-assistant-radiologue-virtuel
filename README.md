@@ -52,6 +52,22 @@ python eval/run_evaluation.py --mode toy \
 
 Ce smoke test vérifie la structure du dépôt, le contrat du dataset synthétique, le schéma de sortie, les garde-fous, l'API de démonstration, la compilation Python et l'évaluation jouet.
 
+## Interface clinique complète (medapp)
+
+Une interface plus aboutie (TrueVision) est disponible dans `medapp/` : comptes
+et rôles (patient / professionnel / admin), dossiers patients, analyse d'images
+branchée sur le pipeline du dépôt (`src/inference` + `src/guardrails`) avec
+historique, et tableau de bord.
+
+```bash
+pip install -r medapp/requirements.txt
+streamlit run medapp/app.py
+```
+
+Zéro configuration en mode démo local (SQLite) — compte de test :
+`admin@demo.local` / `admin`. Pour le mode Supabase (auth + Postgres + stockage),
+voir `medapp/README.md`.
+
 ## API de démonstration
 
 ```bash
@@ -77,7 +93,8 @@ assistant-radiologue-virtuel/
 ├── prompts/       # prompt baseline, prompt amélioré, schéma JSON
 ├── src/           # inférence jouet, garde-fous, métriques, SQLite
 ├── api/           # FastAPI
-├── app/           # Streamlit / Gradio
+├── app/           # Streamlit / Gradio (démo simple)
+├── medapp/        # interface clinique complète (TrueVision)
 ├── eval/          # évaluation, sorties CSV/JSON, registre d'erreurs
 ├── tests/         # smoke tests et contrat minimal
 ├── notebooks/     # notebooks de démarrage

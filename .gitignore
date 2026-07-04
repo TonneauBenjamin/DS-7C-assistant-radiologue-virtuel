@@ -9,8 +9,16 @@ eval/outputs/
 .env
 .DS_Store
 
-# Local/professor visual material
-assets/
+# Local/professor visual material (root only; medapp/assets is tracked)
+/assets/
+
+# medapp: secrets and locally generated demo data
+medapp/.streamlit/secrets.toml
+medapp/demo_data/*
+!medapp/demo_data/.gitkeep
+!medapp/demo_data/images/
+medapp/demo_data/images/*
+!medapp/demo_data/images/.gitkeep
 
 # Local review / rollback material
 .rollback*/

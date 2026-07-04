@@ -1,0 +1,6 @@
+streamlit>=1.36
+pandas>=2.0
+Pillow>=10.4
+segno>=1.6
+supabase>=2.6
+numpy>=1.26
