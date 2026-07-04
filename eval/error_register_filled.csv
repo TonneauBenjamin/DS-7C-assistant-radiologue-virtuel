@@ -1,9 +1,0 @@
-case_id,ground_truth,prediction,error_type,severity,comment,corrective_action
-CXR_REAL_012_suspected_opacity,suspected_opacity,normal,FN,high,,
-CXR_REAL_013_suspected_opacity,suspected_opacity,normal,FN,high,,
-CXR_REAL_014_suspected_opacity,suspected_opacity,normal,FN,high,,
-CXR_REAL_015_suspected_opacity,suspected_opacity,normal,FN,high,,
-CXR_REAL_016_suspected_opacity,suspected_opacity,normal,FN,high,,
-CXR_REAL_018_suspected_opacity,suspected_opacity,normal,FN,high,,
-CXR_REAL_022_suspected_opacity,suspected_opacity,normal,FN,high,,
-CXR_REAL_023_suspected_opacity,suspected_opacity,normal,FN,high,,
