@@ -85,7 +85,7 @@ def test_prediction_schema_warning_and_guardrails() -> None:
 
 
 def test_python_source_tree_compiles() -> None:
-    for folder in ("src", "api", "app", "eval", "finetuning", "tests"):
+    for folder in ("src", "api", "medapp", "eval", "finetuning", "tests"):
         assert compileall.compile_dir(ROOT / folder, quiet=1)
 
 
