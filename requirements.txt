@@ -13,3 +13,6 @@ pydicom>=2.4
 transformers>=4.56
 accelerate>=0.34
 torch
+httpx>=0.27
+python-multipart>=0.0.9
+pytest>=8.0
