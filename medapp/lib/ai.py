@@ -12,6 +12,13 @@ if str(REPO_ROOT) not in sys.path:
 
 def available_models() -> list[str]:
     models = ["baseline", "improved"]
+    try:
+        from src.medgemma_inference import is_available
+
+        if is_available():
+            models += ["medgemma-baseline", "medgemma-improved"]
+    except Exception:
+        pass
     adapter = REPO_ROOT / "finetuning" / "outputs" / "medgemma-pneumo-lora"
     if adapter.exists():
         try:
@@ -38,6 +45,12 @@ def analyze_image(image_bytes: bytes, filename: str, model: str) -> dict[str, An
     try:
         if model == "finetuned":
             pred = _predict_finetuned(tmp_path)
+        elif model.startswith("medgemma-"):
+            from src.medgemma_inference import predict_medgemma
+
+            pred = apply_safety_guardrails(
+                predict_medgemma(tmp_path, mode=model.removeprefix("medgemma-"))
+            )
         else:
             from src.inference import toy_predict
 
