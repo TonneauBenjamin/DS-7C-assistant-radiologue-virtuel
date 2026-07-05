@@ -36,7 +36,7 @@ Réponse :
   "limitations": [],
   "warning": "Prototype pédagogique. Non destiné au diagnostic. Validation par un professionnel qualifié requise.",
   "model_name": "medgemma-4b-it-improved",
-  "prompt_version": "improved_v1",
+  "prompt_version": "improved_v2",
   "latency_ms": 0
 }
 ```
