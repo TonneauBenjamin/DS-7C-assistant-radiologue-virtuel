@@ -135,9 +135,10 @@ def metric_card(value, label, color=INK) -> str:
         f'<div class="l">{label}</div></div>'
     )
 
-def confidence_bar(conf: float) -> None:
+def confidence_bar(conf: float, container=None) -> None:
+    target = container if container is not None else st
     pct = int(round(float(conf) * 100))
-    st.markdown(
+    target.markdown(
         f"""<div style="background:#e6edf3;border-radius:6px;height:10px;overflow:hidden">
         <div style="width:{pct}%;height:100%;background:linear-gradient(90deg,#0f766e,#14b8a6)"></div>
         </div><div style="font-family:'IBM Plex Mono',monospace;font-size:.8rem;

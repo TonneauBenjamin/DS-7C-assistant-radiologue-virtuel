@@ -1,15 +1,9 @@
 from __future__ import annotations
 
 import json
-import sys
 from datetime import date
-from pathlib import Path
 
 import streamlit as st
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 from lib.config import (
     APP_TITLE,
@@ -389,18 +383,33 @@ def render_analyze(db, user):
 
     doc_filter = user["id"] if user.get("role") == "doctor" else None
     patients = db.list_patients(doctor_id=doc_filter)
-    if not patients:
-        st.warning("Aucun patient dans ta patientèle. Crée un dossier dans "
-                   "l'onglet Patients, ou attends qu'un patient te choisisse "
-                   "comme médecin traitant.")
-        return
 
-    ids = [p["id"] for p in patients]
-    labels = {p["id"]: f"{p['full_name']} · {p.get('external_ref') or '—'}"
-              for p in patients}
-    default = st.session_state.get("active_patient")
-    idx = ids.index(default) if default in ids else 0
-    pid = st.selectbox("Patient", ids, index=idx, format_func=lambda i: labels[i])
+    # Mode test : analyse libre, sans dossier patient. Le résultat s'affiche
+    # (avec son JSON) mais n'est PAS enregistré. Seul mode possible s'il n'y a
+    # aucun patient, sinon proposé en option pour une démonstration rapide.
+    if not patients:
+        st.info("Aucun dossier patient dans ta patientèle : tu peux quand même "
+                "tester l'analyse ci-dessous. Le résultat ne sera pas enregistré. "
+                "Crée un dossier dans l'onglet Patients pour rattacher et "
+                "historiser un examen.", icon="🧪")
+        test_mode = True
+        pid = None
+    else:
+        test_mode = st.toggle(
+            "🧪 Test rapide (sans enregistrer dans un dossier)",
+            value=False, key="analyze_test_mode",
+            help="Analyse une radiographie sans la rattacher à un patient. "
+                 "Rien n'est enregistré — idéal pour une démonstration.")
+        if test_mode:
+            pid = None
+        else:
+            ids = [p["id"] for p in patients]
+            labels = {p["id"]: f"{p['full_name']} · {p.get('external_ref') or '—'}"
+                      for p in patients}
+            default = st.session_state.get("active_patient")
+            idx = ids.index(default) if default in ids else 0
+            pid = st.selectbox("Patient", ids, index=idx,
+                               format_func=lambda i: labels[i])
 
     models = available_models()
     model = st.selectbox("Modèle", models,
@@ -411,27 +420,59 @@ def render_analyze(db, user):
 
     col_img, col_res = st.columns([1, 1])
     if uploaded:
-        image_bytes = uploaded.read()
+        image_bytes = uploaded.getvalue()
         col_img.image(image_bytes, caption=uploaded.name, width="stretch")
 
         if col_res.button("Analyser", type="primary", width="stretch"):
             with st.spinner("Analyse en cours…"):
                 pred = analyze_image(image_bytes, uploaded.name, model)
-            db.create_scan(
-                {
-                    "patient_id": pid,
-                    "predicted_class": pred.get("predicted_class"),
-                    "confidence": pred.get("confidence"),
-                    "image_quality": pred.get("image_quality"),
-                    "model_name": pred.get("model_name"),
-                    "result_json": json.dumps(pred, ensure_ascii=False),
-                },
-                image_bytes, uploaded.name,
-            )
-            db.log_audit("scan_created", "patient", pid,
-                         {"class": pred.get("predicted_class"), "model": model})
-            _render_result(col_res, pred, image_bytes)
-            st.session_state["active_patient"] = pid
+            scan_id = None
+            if test_mode or pid is None:
+                # Test : rien n'est écrit en base, on trace juste l'événement.
+                db.log_audit("scan_tested", None, None,
+                             {"class": pred.get("predicted_class"), "model": model})
+            else:
+                scan = db.create_scan(
+                    {
+                        "patient_id": pid,
+                        "predicted_class": pred.get("predicted_class"),
+                        "confidence": pred.get("confidence"),
+                        "image_quality": pred.get("image_quality"),
+                        "model_name": pred.get("model_name"),
+                        "result_json": json.dumps(pred, ensure_ascii=False),
+                    },
+                    image_bytes, uploaded.name,
+                )
+                db.log_audit("scan_created", "patient", pid,
+                             {"class": pred.get("predicted_class"), "model": model})
+                st.session_state["active_patient"] = pid
+                scan_id = (scan or {}).get("id")
+            # On mémorise le résultat pour qu'il survive aux reruns suivants.
+            st.session_state["last_result"] = {
+                "pid": pid, "test": test_mode, "pred": pred,
+                "image": image_bytes, "scan_id": scan_id,
+            }
+            st.rerun()
+
+    # Dernier résultat, ré-affiché à chaque run tant qu'il correspond au contexte
+    # courant (même patient, ou même mode test).
+    last = st.session_state.get("last_result")
+    show_last = last and (
+        (last.get("test") and test_mode)
+        or (not last.get("test") and last.get("pid") == pid)
+    )
+    if show_last:
+        col_res.markdown("**Dernier résultat**"
+                         + (" · test (non enregistré)" if last.get("test") else ""))
+        _render_result(col_res, last["pred"], last.get("image"),
+                       key=f"live_{last.get('scan_id') or 'test'}")
+        if col_res.button("Effacer ce résultat", key="clear_last",
+                          width="stretch"):
+            st.session_state.pop("last_result", None)
+            st.rerun()
+
+    if test_mode or pid is None:
+        return
 
     st.divider()
     st.markdown("##### Historique du patient")
@@ -450,6 +491,10 @@ def render_analyze(db, user):
                 st.rerun()
             with st.expander("🩻 Voir la radiographie"):
                 _render_scan_image(db, sc)
+            rj = sc.get("result_json")
+            if rj:
+                _json_block(rj, key=f"hist_{sc['id']}",
+                            label="Analyse complète (JSON)")
 
 def _render_scan_image(db, sc):
     raw = db.image_bytes(sc.get("image_path"))
@@ -471,29 +516,53 @@ def _render_scan_image(db, sc):
     else:
         st.image(raw, width="stretch")
 
-def _render_result(col, pred, image_bytes=None):
-    color, label = CLASS_STYLE.get(pred.get("predicted_class"),
-                                   ("#94a3b8", pred.get("predicted_class")))
-    col.markdown(class_badge(pred.get("predicted_class")), unsafe_allow_html=True)
-    col.markdown("")
-    confidence_bar(pred.get("confidence", 0))
-    if image_bytes and pred.get("predicted_class") != "normal":
-        from lib.vision import annotate_image
+def _as_dict(value):
+    """Normalise un result_json qui peut arriver en str (SQLite) ou en dict (Supabase)."""
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except Exception:
+            return {"raw": value}
+    return value or {}
 
-        shown, found = annotate_image(image_bytes)
-        if found:
-            col.image(shown, width="stretch")
-            col.caption("🔴 Zone douteuse entourée — localisation "
-                        "automatique, purement indicative.")
-    col.write(f"**Qualité image :** {pred.get('image_quality', '—')}")
-    col.write("**Observations**")
-    for e in pred.get("visual_evidence", []):
-        col.caption(f"• {e}")
-    col.write("**Justification**")
-    col.caption(pred.get("justification", "—"))
-    with col.expander("Sortie complète (JSON)"):
-        col.json(pred)
-    col.warning(pred.get("warning", MEDICAL_DISCLAIMER), icon="⚠️")
+def _json_block(pred, *, key, label="Sortie complète (JSON)", expanded=False):
+    """Bloc JSON repliable, cliquable (arbre déroulant Streamlit) et téléchargeable.
+    `key` doit être unique par analyse pour éviter les collisions de widgets."""
+    data = _as_dict(pred)
+    with st.expander(f"🧾 {label}", expanded=expanded):
+        st.json(data)
+        st.download_button(
+            "⬇ Télécharger le JSON",
+            data=json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"),
+            file_name=f"analyse_{key}.json",
+            mime="application/json",
+            key=f"dl_json_{key}",
+            width="stretch",
+        )
+
+def _render_result(col, pred, image_bytes=None, *, key="live"):
+    with col:
+        st.markdown(class_badge(pred.get("predicted_class")), unsafe_allow_html=True)
+        st.markdown("")
+        confidence_bar(pred.get("confidence", 0))
+        if image_bytes and pred.get("predicted_class") != "normal":
+            from lib.vision import annotate_image
+
+            shown, found = annotate_image(image_bytes)
+            if found:
+                st.image(shown, width="stretch")
+                st.caption("🔴 Zone douteuse entourée — localisation "
+                           "automatique, purement indicative.")
+        st.write(f"**Qualité image :** {pred.get('image_quality', '—')}")
+        obs = pred.get("visual_evidence") or []
+        if obs:
+            st.write("**Observations**")
+            for e in obs:
+                st.caption(f"• {e}")
+        st.write("**Justification**")
+        st.caption(pred.get("justification", "—"))
+        _json_block(pred, key=key)
+        st.warning(pred.get("warning", MEDICAL_DISCLAIMER), icon="⚠️")
 
 def render_my_exams(db, user):
     app_header("Mes examens")
@@ -561,7 +630,7 @@ def render_my_exams(db, user):
             "Radiographie thoracique frontale",
             type=["png", "jpg", "jpeg"], key="pat_upload")
         if uploaded:
-            image_bytes = uploaded.read()
+            image_bytes = uploaded.getvalue()
             st.image(image_bytes, caption=uploaded.name, width=320)
             if st.button(f"Analyser et envoyer à {doc_name}",
                          type="primary", width="stretch"):
@@ -607,6 +676,10 @@ def render_my_exams(db, user):
             c1.caption(str(sc.get("created_at", ""))[:16].replace("T", " "))
             c2.caption("✔ Validé par un médecin")
             c2.caption(f"Modèle : {sc.get('model_name') or '—'}")
+            rj = sc.get("result_json")
+            if rj:
+                _json_block(rj, key=f"pat_{sc['id']}",
+                            label="Détail de l'analyse (JSON)")
     st.warning("Ces informations ne remplacent pas une consultation. "
                "Rapproche-toi de ton médecin pour toute question.", icon="⚠️")
 
