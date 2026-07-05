@@ -100,9 +100,10 @@ La réponse doit contenir une classe, une confiance, des observations visuelles,
 
 - **Registre d'erreurs analysé** : [`eval/error_register_filled.csv`](eval/error_register_filled.csv)
   — les 8 faux négatifs restants, avec commentaire et action corrective pour chacun.
-- **Comparaison baseline vs improved** : [`docs/resultats/before_after_real.csv`](docs/resultats/before_after_real.csv)
+- **Comparaison baseline vs improved** : [`docs/resultats/baseline_vs_v2_final.csv`](docs/resultats/baseline_vs_v2_final.csv)
   — à modèle constant, sensibilité opacités ×2 (0.17 → 0.33), accuracy 0.58 → 0.67,
-  100 % JSON valide, 100 % warning.
+  macro-F1 0.36 → 0.46, 100 % JSON valide, 100 % warning. Prédictions détaillées
+  par cas dans le même dossier.
 
 ## Organisation
 

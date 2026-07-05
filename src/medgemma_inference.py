@@ -3,7 +3,7 @@
 Factorise le code évalué du notebook principal (notebooks/MedGemma_Radios_final.ipynb :
 prompts baseline_v1 / improved_v2, parsing du gabarit, règles d'incertitude) pour
 que toute interface (medapp/TrueVision, API) déploie exactement la version mesurée
-dans docs/resultats/before_after_real.csv. Nécessite un GPU ; sur T4 Colab, le
+dans docs/resultats/baseline_vs_v2_final.csv. Nécessite un GPU ; sur T4 Colab, le
 chargement 8-bit prend quelques minutes la première fois puis reste en cache.
 
 Prototype pédagogique. Non destiné au diagnostic.
@@ -21,7 +21,7 @@ MODEL_ID = "google/medgemma-4b-it"
 
 # Mêmes prompts que prompts/baseline_prompt.txt et prompts/improved_prompt.txt,
 # c'est-à-dire les versions évaluées dans notebooks/MedGemma_Radios_final.ipynb
-# (résultats : docs/resultats/before_after_real.csv).
+# (résultats : docs/resultats/baseline_vs_v2_final.csv).
 PROMPTS = {
     "baseline": {
         "name": "baseline",
