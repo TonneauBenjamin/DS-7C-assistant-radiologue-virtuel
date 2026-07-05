@@ -1,0 +1,3 @@
+mode,n,accuracy,macro_f1,sensitivity_opacity,specificity_normal,json_valid_rate,warning_rate,uncertain_rate,median_latency_ms
+baseline,24,0.5833,0.3619,0.1667,1.0,1.0,1.0,0.1667,3629.5
+optimized_v2_final,24,0.6667,0.463,0.3333,1.0,1.0,1.0,0.2083,3409.0
