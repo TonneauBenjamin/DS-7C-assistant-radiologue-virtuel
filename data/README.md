@@ -11,7 +11,7 @@ tirées du dataset public Kaggle *chest-xray-pneumonia* (licence CC BY 4.0,
 `source = kaggle_pneumonia_ccby4`). Préparation : téléchargement via `kagglehub`,
 échantillonnage équilibré, conversion RGB et renommage au format du projet — voir
 `notebooks/MedGemma_Radios_final.ipynb`. C'est le **même jeu d'images** qui sert à
-comparer les prompts `baseline_v1` et `improved_v2`
+comparer les prompts `baseline` et `optimized_v2_final`
 (résultats : `docs/resultats/baseline_vs_v2_final.csv`). Limite connue : dataset
 pédiatrique, listé dans les `limitations` de chaque sortie JSON.
 

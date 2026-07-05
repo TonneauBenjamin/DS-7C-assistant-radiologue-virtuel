@@ -58,10 +58,13 @@ contient la chaîne complète sur cas réels (pensé pour Colab GPU, chargement 
 2. **Données** : 24 radiographies réelles (12 `normal` + 12 `suspected_opacity`)
    tirées du dataset Kaggle *chest-xray-pneumonia*, converties au format du projet
    (`data/real_cases.csv`).
-3. **Prompts versionnés** : `baseline_v1` (réponse en un mot) vs `improved_v2`
-   (gabarit d'ancrage visuel + issue `UNCERTAIN` + confiance auto-déclarée),
-   archivés dans [`prompts/baseline_prompt.txt`](prompts/baseline_prompt.txt) et
-   [`prompts/improved_prompt.txt`](prompts/improved_prompt.txt).
+3. **Prompts versionnés** : `baseline` (réponse en un mot, archivé dans
+   [`prompts/baseline_prompt.txt`](prompts/baseline_prompt.txt)) vs
+   `optimized_v2_final` (prompt orienté sensibilité — « en cas de doute,
+   PNEUMONIA » — dont le parsing conserve une vraie issue `uncertain`).
+   La variante `improved_v2` à gabarit d'ancrage visuel reste archivée dans
+   [`prompts/improved_prompt.txt`](prompts/improved_prompt.txt) et implémentée
+   dans `src/medgemma_inference.py` (utilisée par medapp et l'API).
 4. **Évaluation** : accuracy, macro-F1, sensibilité/spécificité, matrice de
    confusion, registre d'erreurs FP/FN — sorties dans [`docs/resultats/`](docs/resultats/).
 
@@ -98,8 +101,10 @@ La réponse doit contenir une classe, une confiance, des observations visuelles,
 
 ## Résultats
 
-- **Registre d'erreurs analysé** : [`eval/error_register_filled.csv`](eval/error_register_filled.csv)
-  — les 8 faux négatifs restants, avec commentaire et action corrective pour chacun.
+- **Registre d'erreurs** : [`eval/error_register_filled.csv`](eval/error_register_filled.csv)
+  — les 8 opacités non détectées par `optimized_v2_final` (3 faux négatifs classés
+  `normal`, 5 sorties `uncertain`), pré-remplies avec type d'erreur et sévérité ;
+  commentaire et action corrective à compléter pour la soutenance.
 - **Comparaison baseline vs improved** : [`docs/resultats/baseline_vs_v2_final.csv`](docs/resultats/baseline_vs_v2_final.csv)
   — à modèle constant, sensibilité opacités ×2 (0.17 → 0.33), accuracy 0.58 → 0.67,
   macro-F1 0.36 → 0.46, 100 % JSON valide, 100 % warning. Prédictions détaillées
