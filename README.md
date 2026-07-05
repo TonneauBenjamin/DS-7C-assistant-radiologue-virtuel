@@ -61,7 +61,8 @@ contient la chaîne complète sur cas réels (pensé pour Colab GPU, chargement 
 3. **Prompts versionnés** : `baseline` (réponse en un mot, archivé dans
    [`prompts/baseline_prompt.txt`](prompts/baseline_prompt.txt)) vs
    `optimized_v2_final` (prompt orienté sensibilité — « en cas de doute,
-   PNEUMONIA » — dont le parsing conserve une vraie issue `uncertain`).
+   PNEUMONIA » — dont le parsing conserve une vraie issue `uncertain`, archivé
+   dans [`prompts/optimized_v2_final_prompt.txt`](prompts/optimized_v2_final_prompt.txt)).
    La variante `improved_v2` à gabarit d'ancrage visuel reste archivée dans
    [`prompts/improved_prompt.txt`](prompts/improved_prompt.txt) et implémentée
    dans `src/medgemma_inference.py` (utilisée par medapp et l'API).

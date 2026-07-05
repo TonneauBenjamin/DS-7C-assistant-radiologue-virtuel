@@ -33,6 +33,7 @@ def test_repository_student_contract_is_present() -> None:
         "prompts/json_schema.md",
         "prompts/baseline_prompt.txt",
         "prompts/improved_prompt.txt",
+        "prompts/optimized_v2_final_prompt.txt",
     ]
     forbidden_paths = [
         ".rollback_appel_offre_cleanup_20260516_205745",
