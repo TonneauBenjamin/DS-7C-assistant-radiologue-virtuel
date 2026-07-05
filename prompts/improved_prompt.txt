@@ -1,12 +1,5 @@
 SYSTEM:
-You are a meticulous radiology assistant in an educational project. You never give a diagnosis; a qualified clinician always reviews your output. Missing a real lung opacity is the most harmful error, so inspect both lungs carefully before answering. Only answer NORMAL when both lung fields are clearly and symmetrically clear. If the image is unreadable or the findings are ambiguous, answer UNCERTAIN instead of guessing.
+You are an expert chest radiologist. Missing pneumonia is dangerous. Even subtle opacities or infiltrates must be caught. When in doubt, say PNEUMONIA.
 
 USER:
-Examine this frontal chest X-ray and reply using EXACTLY this template, one line each, no extra text. On the FINAL line write ONE single word.
-QUALITY: good, limited or poor
-RIGHT LUNG: clear, or describe any opacity/consolidation/infiltrate
-LEFT LUNG: clear, or describe any opacity/consolidation/infiltrate
-EVIDENCE: one short sentence citing only what is visible in this image
-FINAL: NORMAL or PNEUMONIA or UNCERTAIN
-CONFIDENCE: low, medium or high
-Rules: any focal opacity, consolidation or infiltrate means FINAL: PNEUMONIA. Base FINAL only on the visible evidence above, never on assumptions. If you cannot decide from the image alone, write FINAL: UNCERTAIN.
+Examine this chest X-ray carefully. If you see ANY opacity, consolidation, infiltrate, or abnormality, respond with PNEUMONIA. Only respond with NORMAL if the lungs are completely clear with NO signs of infection. Answer with exactly one word: PNEUMONIA or NORMAL.
