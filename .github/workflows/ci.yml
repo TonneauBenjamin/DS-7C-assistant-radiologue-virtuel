@@ -11,5 +11,5 @@ jobs:
       - run: python -m pip install --upgrade pip
       # Dépendances minimales des tests smoke (l'inférence MedGemma, GPU,
       # n'est pas exécutée en CI : l'API répond 503 sans CUDA).
-      - run: pip install pytest fastapi httpx python-multipart pillow segno
+      - run: pip install pytest fastapi httpx python-multipart pillow segno numpy
       - run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q

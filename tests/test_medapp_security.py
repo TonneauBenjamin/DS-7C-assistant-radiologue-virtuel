@@ -62,3 +62,14 @@ def test_reset_code_flow():
     security.store_reset_code(store, "user@x.fr", code)
     store["pwreset::user@x.fr::until"] = 0
     assert not security.verify_reset_code(store, "user@x.fr", code)
+
+def test_vision_locates_zone_and_annotates_png():
+    from lib.vision import annotate_image, locate_suspicious_zone
+    root = Path(__file__).resolve().parents[1]
+    img = (root / "data" / "sample_images" / "CXR_SYN_002_suspected_opacity.png").read_bytes()
+    box = locate_suspicious_zone(img)
+    assert box is not None and box[0] < box[2] and box[1] < box[3]
+    out, found = annotate_image(img)
+    assert found and out[:4] == b"\x89PNG" and out != img
+    # image illisible : pas d'annotation plutôt qu'un cercle arbitraire
+    assert annotate_image(b"not-an-image") == (b"not-an-image", False)
