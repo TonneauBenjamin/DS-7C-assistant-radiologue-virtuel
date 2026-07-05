@@ -64,7 +64,7 @@ def load_prompt_config(mode: str) -> dict[str, Any]:
                     "version": "optimized_v2_final_v1",
                     "system": system,
                     "user": user,
-                    "max_new_tokens": 10,
+                    "max_new_tokens": 80,
                 }
             except FileNotFoundError:
                 continue
@@ -106,6 +106,65 @@ def load_model():
             device_map="auto",
         )
     return _CACHE["processor"], _CACHE["model"]
+
+
+def _extract_observations_and_justification(txt: str) -> tuple[list[str], str]:
+    """Extrait des observations et une justification à partir du texte généré.
+
+    Le modèle peut répondre sous forme libre, ou avec un schéma simple en lignes.
+    Cette fonction tente d'abord de reconnaître des sections explicites
+    OBSERVATIONS/JUSTIFICATION, puis retombe sur un texte libre ou un fallback
+    minimal pour éviter d'afficher un champ vide.
+    """
+    text = (txt or "").strip()
+    if not text:
+        return ["Aucune observation claire n'a pu être extraite de l'image."], "Le modèle n'a pas produit de justification exploitable."
+
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    obs: list[str] = []
+    justification = ""
+
+    section = None
+    for line in lines:
+        upper = line.upper()
+        if upper.startswith("OBSERVATIONS") or upper.startswith("- OBSERVATIONS"):
+            section = "obs"
+            continue
+        if upper.startswith("JUSTIFICATION") or upper.startswith("- JUSTIFICATION"):
+            section = "just"
+            remainder = line.split(":", 1)[1].strip() if ":" in line else ""
+            if remainder:
+                justification = remainder
+            continue
+        if upper.startswith("CLASS") or upper.startswith("DIAGNOSIS") or upper.startswith("CONCLUSION"):
+            section = None
+            continue
+
+        if section == "obs":
+            cleaned = re.sub(r"^[-*•]\s*", "", line).strip()
+            if cleaned and not cleaned.upper().startswith("JUSTIFICATION"):
+                obs.append(cleaned)
+        elif section == "just":
+            if not justification:
+                justification = line
+            else:
+                justification = f"{justification} {line}"
+
+    if obs:
+        return obs, justification.strip() or "The model identified suspicious visual findings and summarized them below."
+
+    # Fallback: try to reuse the whole response as a justification and create a generic observation.
+    if justification:
+        return ["A visual abnormality was reported by the model."], justification.strip()
+
+    if re.search(r"\b(PNEUMONIA|OPACITY|CONSOLIDATION|INFILTRATE|ABNORMAL|NORMAL)\b", text, re.I):
+        label = "suspicious findings" if re.search(r"\b(PNEUMONIA|OPACITY|CONSOLIDATION|INFILTRATE|ABNORMAL)\b", text, re.I) else "no clear abnormality"
+        if label == "suspicious findings":
+            return ["The model detected signs of abnormality in the X-ray."], text[:300]
+        return ["No clear abnormality was identified in the image."], text[:300]
+
+    return ["No clear observation could be extracted from the image."], text[:300] or "The model did not produce a usable justification."
 
 
 def _classify(txt: str, mode: str) -> tuple[str, float]:
@@ -200,10 +259,11 @@ def predict_medgemma(image_path: Path | str, mode: str = "improved") -> dict[str
     latency_ms = int((time.time() - t0) * 1000)
     txt = processor.decode(gen[0][input_len:], skip_special_tokens=True)
     pred, conf = _classify(txt, cfg["name"])
+    observations, justification = _extract_observations_and_justification(txt)
     return {
         "image_quality": "good", "predicted_class": pred, "confidence": conf,
-        "visual_evidence": [txt.strip()[:160]] if txt.strip() else [],
-        "justification": txt.strip()[:300],
+        "visual_evidence": observations,
+        "justification": justification,
         "limitations": ["no clinical context", "not a validated medical model", "pediatric dataset"],
         "warning": WARNING_TEXT,
         "model_name": f"medgemma-4b-it-{cfg['name']}",
