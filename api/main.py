@@ -3,9 +3,9 @@ from __future__ import annotations
 import re
 import shutil
 from pathlib import Path
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile
 
-from src.inference import toy_predict
+from src.medgemma_inference import is_available, predict_medgemma
 from src.guardrails import apply_safety_guardrails
 
 app = FastAPI(title="Assistant radiologue virtuel EFREI", version="0.1.0")
@@ -19,6 +19,11 @@ def health() -> dict:
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)) -> dict:
+    if not is_available():
+        raise HTTPException(
+            status_code=503,
+            detail="Inférence MedGemma indisponible : GPU CUDA requis.",
+        )
     UPLOAD_DIR.mkdir(exist_ok=True)
     filename = Path(file.filename or "image.png").name
     suffix = Path(filename).suffix or ".png"
@@ -27,5 +32,5 @@ async def predict(file: UploadFile = File(...)) -> dict:
     target = UPLOAD_DIR / f"uploaded_{safe_stem}{suffix}"
     with target.open("wb") as f:
         shutil.copyfileobj(file.file, f)
-    pred = toy_predict(target, mode="improved")
+    pred = predict_medgemma(target, mode="improved")
     return apply_safety_guardrails(pred)

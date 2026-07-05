@@ -11,7 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 def available_models() -> list[str]:
-    models = ["baseline", "improved"]
+    models: list[str] = []
     try:
         from src.medgemma_inference import is_available
 
@@ -52,9 +52,7 @@ def analyze_image(image_bytes: bytes, filename: str, model: str) -> dict[str, An
                 predict_medgemma(tmp_path, mode=model.removeprefix("medgemma-"))
             )
         else:
-            from src.inference import toy_predict
-
-            pred = apply_safety_guardrails(toy_predict(tmp_path, mode=model))
+            raise ValueError(f"Modèle inconnu : {model}")
     finally:
         import shutil
 

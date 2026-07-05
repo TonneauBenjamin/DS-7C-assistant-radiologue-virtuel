@@ -8,7 +8,7 @@
 - `dev` : 100 à 150 cas si un vrai dataset est utilisé.
 - `final` : 20 à 30 cas commentés pour la soutenance.
 
-Le jeu synthétique fourni sert uniquement à valider le pipeline logiciel : chargement, inférence jouet, JSON, logs, métriques et garde-fous. Un score parfait sur ce jeu ne constitue pas une performance médicale.
+Le jeu synthétique fourni sert uniquement à valider le pipeline logiciel : chargement, JSON, logs, métriques et garde-fous. Un score parfait sur ce jeu ne constitue pas une performance médicale. L'inférence réelle (MedGemma 4B, prompts baseline/improved) est évaluée dans `notebooks/MedGemma_Radios_final.ipynb` sur GPU.
 
 ## Métriques minimales
 
@@ -42,7 +42,6 @@ Avant toute démonstration, le dépôt doit passer un contrôle court :
 
 ```bash
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q
-python eval/run_evaluation.py --mode toy --out-dir /tmp/assistant-radio-eval --db-path /tmp/assistant-radio-evidence.sqlite
 ```
 
 Ce test ne remplace pas l'analyse d'erreurs. Il vérifie seulement que le dépôt est exécutable, que les avertissements sont présents et que les sorties restent structurées.

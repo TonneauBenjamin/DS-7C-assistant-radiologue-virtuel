@@ -2,19 +2,15 @@ from __future__ import annotations
 
 import compileall
 import csv
-import json
-import os
 from pathlib import Path
 import shutil
-import subprocess
-import sys
 
 from fastapi.testclient import TestClient
 
 from api.main import app
 from api.main import health
 from src.guardrails import WARNING_TEXT, apply_safety_guardrails, validate_prediction
-from src.inference import toy_predict
+from src.medgemma_inference import is_available
 from src.metrics import summarize_metrics
 
 
@@ -25,18 +21,18 @@ def test_repository_student_contract_is_present() -> None:
     required_paths = [
         "README.md",
         "requirements.txt",
-        "requirements-test.txt",
         ".github/workflows/ci.yml",
         "docs/appel_offre.md",
         "docs/architecture.md",
         "docs/ethique_et_limites.md",
         "docs/evaluation_protocol.md",
         "data/synthetic_cases.csv",
-        "src/inference.py",
+        "src/medgemma_inference.py",
         "src/guardrails.py",
         "api/main.py",
-        "eval/run_evaluation.py",
         "prompts/json_schema.md",
+        "prompts/baseline_prompt.txt",
+        "prompts/improved_prompt.txt",
     ]
     forbidden_paths = [
         ".rollback_appel_offre_cleanup_20260516_205745",
@@ -74,8 +70,17 @@ def test_synthetic_dataset_contract_is_valid() -> None:
 
 
 def test_prediction_schema_warning_and_guardrails() -> None:
-    image_path = ROOT / "data" / "sample_images" / "CXR_SYN_002_suspected_opacity.png"
-    pred = apply_safety_guardrails(toy_predict(image_path, mode="improved"))
+    pred = apply_safety_guardrails(
+        {
+            "image_quality": "good",
+            "predicted_class": "suspected_opacity",
+            "confidence": 0.85,
+            "visual_evidence": ["right lower lobe opacity"],
+            "justification": "Opacité focale compatible avec une pneumonie.",
+            "limitations": ["no clinical context", "not a validated medical model"],
+            "warning": WARNING_TEXT,
+        }
+    )
     valid, errors = validate_prediction(pred)
 
     assert valid, errors
@@ -85,7 +90,7 @@ def test_prediction_schema_warning_and_guardrails() -> None:
 
 
 def test_python_source_tree_compiles() -> None:
-    for folder in ("src", "api", "medapp", "eval", "finetuning", "tests"):
+    for folder in ("src", "api", "medapp", "finetuning", "tests"):
         assert compileall.compile_dir(ROOT / folder, quiet=1)
 
 
@@ -112,7 +117,7 @@ def test_metrics_and_api_health_contract() -> None:
     assert metrics["warning_rate"] == 1.0
 
 
-def test_api_predict_preserves_uploaded_case_signal() -> None:
+def test_api_predict_requires_gpu_or_returns_prediction() -> None:
     client = TestClient(app)
     image_path = ROOT / "data" / "sample_images" / "CXR_SYN_002_suspected_opacity.png"
 
@@ -122,41 +127,12 @@ def test_api_predict_preserves_uploaded_case_signal() -> None:
             files={"file": (image_path.name, file, "image/png")},
         )
 
-    payload = response.json()
-    assert response.status_code == 200
-    assert payload["predicted_class"] == "suspected_opacity"
-    assert payload["warning"] == WARNING_TEXT
+    if not is_available():
+        # Sans GPU CUDA, l'API doit refuser proprement plutôt que planter.
+        assert response.status_code == 503
+    else:
+        payload = response.json()
+        assert response.status_code == 200
+        assert payload["predicted_class"] in {"normal", "suspected_opacity", "uncertain"}
+        assert payload["warning"] == WARNING_TEXT
     shutil.rmtree(ROOT / "tmp_uploads", ignore_errors=True)
-
-
-def test_evaluation_command_runs_and_preserves_warning_contract(tmp_path: Path) -> None:
-    db_path = tmp_path / "medical_ai_evidence.sqlite"
-    out_dir = tmp_path / "outputs"
-    env = os.environ.copy()
-    env["PYTHONPATH"] = str(ROOT)
-
-    result = subprocess.run(
-        [
-            sys.executable,
-            "eval/run_evaluation.py",
-            "--mode",
-            "toy",
-            "--out-dir",
-            str(out_dir),
-            "--db-path",
-            str(db_path),
-        ],
-        cwd=ROOT,
-        env=env,
-        text=True,
-        capture_output=True,
-        timeout=20,
-        check=False,
-    )
-    assert result.returncode == 0, result.stderr
-    summary = json.loads(result.stdout)
-    assert {row["mode"] for row in summary} == {"baseline", "improved"}
-    assert all(row["json_valid_rate"] == 1.0 for row in summary)
-    assert all(row["warning_rate"] == 1.0 for row in summary)
-    assert (out_dir / "before_after_summary.csv").exists()
-    assert db_path.exists()

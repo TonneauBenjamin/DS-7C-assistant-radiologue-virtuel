@@ -58,8 +58,9 @@ admin dans l'onglet Administration).
 
 ## Modèles d'analyse
 
-- `baseline` / `improved` : prédicteur de démonstration du dépôt
-  (`src.inference.toy_predict`), fonctionne partout.
+- `medgemma-baseline` / `medgemma-improved` : MedGemma 4B avec le prompt
+  `baseline_v1` ou `improved_v2` (`src.medgemma_inference`). Nécessite un GPU
+  CUDA ; sans GPU, l'app affiche un avertissement et désactive l'analyse.
 - `finetuned` : apparaît automatiquement **si** l'adaptateur MedGemma entraîné
   est présent dans `finetuning/outputs/medgemma-pneumo-lora/` **et** qu'un GPU
   est disponible. Utilise `finetuning.infer_finetuned`.

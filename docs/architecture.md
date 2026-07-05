@@ -5,13 +5,13 @@
 ## Pipeline
 
 ```text
-Image upload → Preprocessing → VLM / toy model → Guardrails → JSON → UI → SQLite logs
+Image upload → Preprocessing → MedGemma 4B (VLM) → Guardrails → JSON → UI → SQLite logs
 ```
 
 ## Composants
 
 - `src/preprocessing.py` : validation de fichier, chargement image, resizing.
-- `src/inference.py` : inférence jouet ou connecteur modèle.
+- `src/medgemma_inference.py` : inférence MedGemma 4B (prompts baseline/improved, GPU requis).
 - `src/guardrails.py` : validation JSON, warning, incertitude.
 - `src/metrics.py` : accuracy, macro-F1, sensibilité, spécificité, validité JSON.
 - `src/database.py` : initialisation SQLite et stockage des runs.
@@ -35,8 +35,8 @@ Réponse :
   "justification": "...",
   "limitations": [],
   "warning": "Prototype pédagogique. Non destiné au diagnostic. Validation par un professionnel qualifié requise.",
-  "model_name": "toy-rule-baseline",
-  "prompt_version": "baseline_v1",
+  "model_name": "medgemma-4b-it-improved",
+  "prompt_version": "improved_v1",
   "latency_ms": 0
 }
 ```

@@ -412,8 +412,12 @@ def render_analyze(db, user):
                                format_func=lambda i: labels[i])
 
     models = available_models()
+    if not models:
+        st.warning("Aucun modèle disponible : l'inférence MedGemma nécessite "
+                   "un GPU CUDA (voir notebooks/MedGemma_Radios_final.ipynb).")
+        return
     model = st.selectbox("Modèle", models,
-                         help="baseline/improved : démonstration. "
+                         help="medgemma-baseline/improved : MedGemma 4B, prompt v1/v2. "
                               "finetuned : MedGemma entraîné (GPU requis).")
     uploaded = st.file_uploader("Radiographie thoracique frontale",
                                 type=["png", "jpg", "jpeg"])
@@ -622,37 +626,41 @@ def render_my_exams(db, user):
     else:
         doc_name = doc_labels.get(record["doctor_id"], "ton médecin")
         models = available_models()
-        model = st.selectbox(
-            "Modèle d'analyse", models, key="pat_model",
-            help="baseline/improved : démonstration. "
-                 "finetuned : MedGemma entraîné (GPU requis).")
-        uploaded = st.file_uploader(
-            "Radiographie thoracique frontale",
-            type=["png", "jpg", "jpeg"], key="pat_upload")
-        if uploaded:
-            image_bytes = uploaded.getvalue()
-            st.image(image_bytes, caption=uploaded.name, width=320)
-            if st.button(f"Analyser et envoyer à {doc_name}",
-                         type="primary", width="stretch"):
-                with st.spinner("Analyse en cours…"):
-                    pred = analyze_image(image_bytes, uploaded.name, model)
-                db.create_scan(
-                    {
-                        "patient_id": record["id"],
-                        "predicted_class": pred.get("predicted_class"),
-                        "confidence": pred.get("confidence"),
-                        "image_quality": pred.get("image_quality"),
-                        "model_name": pred.get("model_name"),
-                        "result_json": json.dumps(pred, ensure_ascii=False),
-                    },
-                    image_bytes, uploaded.name,
-                )
-                db.log_audit("scan_submitted_by_patient", "patient",
-                             record["id"], {"model": model})
-                st.session_state["myscan_flash"] = (
-                    f"Examen analysé et transmis à {doc_name}. Le résultat "
-                    "s'affichera ici dès qu'il aura été validé.")
-                st.rerun()
+        if not models:
+            st.warning("Aucun modèle disponible : l'inférence MedGemma "
+                       "nécessite un GPU CUDA.")
+        else:
+            model = st.selectbox(
+                "Modèle d'analyse", models, key="pat_model",
+                help="medgemma-baseline/improved : MedGemma 4B, prompt v1/v2. "
+                     "finetuned : MedGemma entraîné (GPU requis).")
+            uploaded = st.file_uploader(
+                "Radiographie thoracique frontale",
+                type=["png", "jpg", "jpeg"], key="pat_upload")
+            if uploaded:
+                image_bytes = uploaded.getvalue()
+                st.image(image_bytes, caption=uploaded.name, width=320)
+                if st.button(f"Analyser et envoyer à {doc_name}",
+                             type="primary", width="stretch"):
+                    with st.spinner("Analyse en cours…"):
+                        pred = analyze_image(image_bytes, uploaded.name, model)
+                    db.create_scan(
+                        {
+                            "patient_id": record["id"],
+                            "predicted_class": pred.get("predicted_class"),
+                            "confidence": pred.get("confidence"),
+                            "image_quality": pred.get("image_quality"),
+                            "model_name": pred.get("model_name"),
+                            "result_json": json.dumps(pred, ensure_ascii=False),
+                        },
+                        image_bytes, uploaded.name,
+                    )
+                    db.log_audit("scan_submitted_by_patient", "patient",
+                                 record["id"], {"model": model})
+                    st.session_state["myscan_flash"] = (
+                        f"Examen analysé et transmis à {doc_name}. Le résultat "
+                        "s'affichera ici dès qu'il aura été validé.")
+                    st.rerun()
 
     st.divider()
     st.markdown("##### Mes résultats validés")

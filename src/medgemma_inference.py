@@ -84,8 +84,7 @@ def _classify(txt: str, mode: str) -> tuple[str, float]:
 def predict_medgemma(image_path: Path | str, mode: str = "improved") -> dict[str, Any]:
     """Prédit au schéma du projet. `mode` ∈ {baseline, improved}.
 
-    Les garde-fous (`apply_safety_guardrails`) sont appliqués par l'appelant,
-    comme pour `toy_predict`.
+    Les garde-fous (`apply_safety_guardrails`) sont appliqués par l'appelant.
     """
     import torch
     from PIL import Image
