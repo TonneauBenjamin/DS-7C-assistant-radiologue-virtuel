@@ -108,63 +108,46 @@ def load_model():
     return _CACHE["processor"], _CACHE["model"]
 
 
-def _extract_observations_and_justification(txt: str) -> tuple[list[str], str]:
-    """Extrait des observations et une justification à partir du texte généré.
-
-    Le modèle peut répondre sous forme libre, ou avec un schéma simple en lignes.
-    Cette fonction tente d'abord de reconnaître des sections explicites
-    OBSERVATIONS/JUSTIFICATION, puis retombe sur un texte libre ou un fallback
-    minimal pour éviter d'afficher un champ vide.
+def _enrichir_resultat(pred_class: str, confidence: float, txt: str) -> tuple[list[str], str]:
     """
-    text = (txt or "").strip()
-    if not text:
-        return ["Aucune observation claire n'a pu être extraite de l'image."], "Le modèle n'a pas produit de justification exploitable."
+    Génère des descriptions cliniques basées sur la classe prédite.
+    (Copié de votre final_version - enrichir_resultat)
+    """
+    if pred_class == 'suspected_opacity':
+        visual_evidence = [
+            "Opacité pulmonaire suspecte détectée sur la radiographie",
+            "Présence possible d'une consolidation ou d'un infiltrat",
+            "Zone d'hyperdensité anormale visualisée"
+        ]
+        justification = (
+            "L'analyse de la radiographie thoracique révèle une opacité pulmonaire suspecte. "
+            "Cette anomalie peut correspondre à une pneumonie, une consolidation ou un infiltrat. "
+            "Une validation par un radiologue qualifié est recommandée pour confirmer le diagnostic."
+        )
+    elif pred_class == 'normal':
+        visual_evidence = [
+            "Champs pulmonaires clairs et bien aérés",
+            "Absence d'opacité, de consolidation ou d'infiltrat visible",
+            "Cœur et structures médiastinales dans les limites de la normale"
+        ]
+        justification = (
+            "L'examen de la radiographie thoracique ne montre pas d'anomalie significative. "
+            "Les champs pulmonaires sont symétriques et aérés. "
+            "Aucune opacité, consolidation ou infiltrat n'est visualisé."
+        )
+    else:  # uncertain
+        visual_evidence = [
+            "Image radiologique ambiguë ou de qualité limitée",
+            "Présence possible d'artefacts rendant l'interprétation difficile",
+            "Signes radiologiques non concluants"
+        ]
+        justification = (
+            "L'interprétation de cette radiographie est difficile en raison d'une qualité d'image limitée "
+            "ou de la présence d'artefacts. Une analyse par un professionnel qualifié est recommandée. "
+            "Des examens complémentaires peuvent être nécessaires."
+        )
 
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
-
-    obs: list[str] = []
-    justification = ""
-
-    section = None
-    for line in lines:
-        upper = line.upper()
-        if upper.startswith("OBSERVATIONS") or upper.startswith("- OBSERVATIONS"):
-            section = "obs"
-            continue
-        if upper.startswith("JUSTIFICATION") or upper.startswith("- JUSTIFICATION"):
-            section = "just"
-            remainder = line.split(":", 1)[1].strip() if ":" in line else ""
-            if remainder:
-                justification = remainder
-            continue
-        if upper.startswith("CLASS") or upper.startswith("DIAGNOSIS") or upper.startswith("CONCLUSION"):
-            section = None
-            continue
-
-        if section == "obs":
-            cleaned = re.sub(r"^[-*•]\s*", "", line).strip()
-            if cleaned and not cleaned.upper().startswith("JUSTIFICATION"):
-                obs.append(cleaned)
-        elif section == "just":
-            if not justification:
-                justification = line
-            else:
-                justification = f"{justification} {line}"
-
-    if obs:
-        return obs, justification.strip() or "The model identified suspicious visual findings and summarized them below."
-
-    # Fallback: try to reuse the whole response as a justification and create a generic observation.
-    if justification:
-        return ["A visual abnormality was reported by the model."], justification.strip()
-
-    if re.search(r"\b(PNEUMONIA|OPACITY|CONSOLIDATION|INFILTRATE|ABNORMAL|NORMAL)\b", text, re.I):
-        label = "suspicious findings" if re.search(r"\b(PNEUMONIA|OPACITY|CONSOLIDATION|INFILTRATE|ABNORMAL)\b", text, re.I) else "no clear abnormality"
-        if label == "suspicious findings":
-            return ["The model detected signs of abnormality in the X-ray."], text[:300]
-        return ["No clear abnormality was identified in the image."], text[:300]
-
-    return ["No clear observation could be extracted from the image."], text[:300] or "The model did not produce a usable justification."
+    return visual_evidence, justification
 
 
 def _classify(txt: str, mode: str) -> tuple[str, float]:
@@ -212,7 +195,7 @@ def _classify(txt: str, mode: str) -> tuple[str, float]:
     if has_normal:
         weakeners = [r"SLIGHT", r"MILD", r"MINIMAL", r"SUBTLE", r"EARLY", r"BEGINNING"]
         if any(re.search(w, up) for w in weakeners):
-            return ("suspected_opacity", 0.65)  # anomalie légère -> signalée par prudence
+            return ("suspected_opacity", 0.65)
         return ("normal", 0.85)
     uncertain_patterns = [
         r"UNCERTAIN", r"MAYBE", r"POSSIBLE", r"PROBABLY",
@@ -259,7 +242,10 @@ def predict_medgemma(image_path: Path | str, mode: str = "improved") -> dict[str
     latency_ms = int((time.time() - t0) * 1000)
     txt = processor.decode(gen[0][input_len:], skip_special_tokens=True)
     pred, conf = _classify(txt, cfg["name"])
-    observations, justification = _extract_observations_and_justification(txt)
+    
+    # 🆕 Utiliser enrichir_resultat au lieu de _extract_observations_and_justification
+    observations, justification = _enrichir_resultat(pred, conf, txt)
+    
     return {
         "image_quality": "good", "predicted_class": pred, "confidence": conf,
         "visual_evidence": observations,
